@@ -12,11 +12,11 @@ export default async function handler(req, res) {
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) {
-      console.error("Missing GEMINI_API_KEY in environment");
+      console.error("❌ Missing GEMINI_API_KEY in environment");
       return res.status(500).json({ error: "Server misconfiguration" });
     }
 
-    // Cassandra persona — always included first
+    // Cassandra persona — always prepended
     const systemInstruction = {
       role: "user",
       parts: [
@@ -29,8 +29,7 @@ You may use Markdown (bold/italic) for emphasis.`
       ]
     };
 
-    // Convert the incoming messages (OpenAI-style) to Gemini "contents"
-    // Map assistant -> assistant, user/system -> user (Gemini doesn't have "system" role in this format)
+    // Convert incoming messages to Gemini format
     const conversationContents = messages.map((m) => ({
       role: m.role === "assistant" ? "assistant" : "user",
       parts: [{ text: m.content }]
@@ -50,15 +49,13 @@ You may use Markdown (bold/italic) for emphasis.`
     const data = await resp.json();
     console.log("DEBUG Gemini raw response ->", JSON.stringify(data, null, 2));
 
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-    if (!reply) {
-      return res.status(500).json({ error: "No reply from Gemini" });
-    }
+    const reply =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
+      "⚠️ Sorry, Cassandra couldn’t generate a reply.";
 
-    // Return a simple JSON payload
-    return res.json({ reply });
+    return res.status(200).json({ reply });
   } catch (err) {
-    console.error("Error in /api/chat:", err);
+    console.error("❌ Error in /api/chat:", err);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
