@@ -12,10 +12,17 @@
     {
       "src": "**/*.css",
       "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.js",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/index.html", "dest": "/index.html" }
   ]
 }
+
