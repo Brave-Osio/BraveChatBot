@@ -20,7 +20,7 @@ if (GEMINI_API_KEY) {
 }
 
 // Chat endpoint
-app.post("/chat", async (req, res) => {
+app.post("/api/chat", async (req, res) => {
   try {
     const { messages } = req.body || {};
     if (!messages || !Array.isArray(messages)) {

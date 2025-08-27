@@ -29,52 +29,66 @@
     const userInput = document.getElementById("user-input");
     const sendBtn = document.getElementById("send-btn");
 
-    function addMessage(content, sender) {
-        const div = document.createElement("div");
-        div.classList.add("message", sender);
-        div.textContent = content;
-        chatContainer.appendChild(div);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+    // conversation memory for current session
+    let conversation = [
+      { role: "system", content: "You are Cassandra, a helpful chatbot created by Brave John Osio." }
+    ];
+
+    function addMessage(content, sender){
+      const div = document.createElement("div");
+      div.classList.add("message", sender);
+      // render plain text (we'll accept Markdown from reply; rendering of markdown is optional)
+      div.textContent = content;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    async function sendMessage() {
-        const text = userInput.value.trim();
-        if (!text) return;
+    async function sendMessage(){
+      const text = userInput.value.trim();
+      if(!text) return;
+      // add to UI and memory
+      addMessage(text, "user");
+      conversation.push({ role: "user", content: text });
+      userInput.value = "";
 
-        // Show user message
-        addMessage(text, "user");
-        userInput.value = "";
+      try {
+        //for server
+        const API_URL =
+          (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") // 127.0.0.1 is MY live server for local dev
+            ? "http://localhost:3000/api/chat"
+            : "/api/chat";
 
-        try {
-        const res = await fetch("http://localhost:3000/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-            messages: [
-                { role: "system", content: "You are Cassandra, a helpful chatbot." },
-                { role: "user", content: text }
-            ]
-            })
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: conversation })
         });
 
-        const data = await res.json();
-        console.log("DEBUG frontend response ->", data);
+        //for local development
+        // const res = await fetch("http://localhost:3000/api/chat", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({ messages: conversation })
+        // });
 
-        if (data.reply) {
-            addMessage(data.reply, "bot");
+        const data = await res.json();
+        if (data.error) {
+          addMessage("⚠️ " + data.error, "bot");
         } else {
-            addMessage("⚠️ No response from server.", "bot");
+          addMessage(data.reply, "bot");
+          // save assistant reply into memory
+          conversation.push({ role: "assistant", content: data.reply });
         }
-        } catch (err) {
-        console.error("Request failed", err);
-        addMessage("⚠️ Error contacting server.", "bot");
-        }
+      } catch (err) {
+        console.error(err);
+        addMessage("⚠️ Error contacting server", "bot");
+      }
     }
 
     sendBtn.addEventListener("click", sendMessage);
     userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendMessage();
+      if (e.key === "Enter") sendMessage();
     });
-  </script>
+</script>
 </body>
 </html>
