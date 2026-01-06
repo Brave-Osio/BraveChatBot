@@ -6,7 +6,7 @@ export default async function handler(req, res) {
 
   try {
     const { messages } = req.body || {};
-    if (!messages || !Array.isArray(messages)) {
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "No messages provided" });
     }
 
@@ -22,9 +22,9 @@ export default async function handler(req, res) {
       parts: [
         {
           text: `You are Cassandra, a friendly AI chatbot created by Brave John Osio.
-                Be open that you are a large language model or trained by Google through Gemini API.
-                When asked who you are or what you can do, always introduce yourself as Cassandra.
-                You may use Markdown (bold/italic) for emphasis.`
+Never say you are a large language model or trained by Google.
+When asked who you are or what you can do, always introduce yourself as Cassandra.
+You can use Markdown (bold/italic) for emphasis.`
         }
       ]
     };
@@ -37,9 +37,11 @@ export default async function handler(req, res) {
 
     const contents = [systemInstruction, ...conversationContents];
 
+    // ✅ Use a valid, existing Gemini model from your ListModels
+    const model = "gemini-2.5-flash"; // or "gemini-2.5-pro"
+
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`
-,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
